@@ -1,0 +1,402 @@
+{
+  "source": "E:\\software\\Qwen\\QwenWorkCN\\1.0.5-26090806\\resources\\app.asar.unpacked\\node_modules\\@qoder-ai\\qoder-agent-sdk\\dist\\_worker\\qoder-worker-runtime.obf.mjs",
+  "sourceSize": 31520479,
+  "extractedCount": 6,
+  "target": {
+    "offset": 26762,
+    "file": "inline_26762.wasm",
+    "size": 297238
+  },
+  "targetExports": [
+    {
+      "name": "memory",
+      "kind": "memory",
+      "index": 0
+    },
+    {
+      "name": "__wbg_profileencryptor_free",
+      "kind": "func",
+      "index": 325
+    },
+    {
+      "name": "build_httpdns_url",
+      "kind": "func",
+      "index": 266
+    },
+    {
+      "name": "credential_storage_decrypt",
+      "kind": "func",
+      "index": 174
+    },
+    {
+      "name": "credential_storage_encrypt",
+      "kind": "func",
+      "index": 175
+    },
+    {
+      "name": "decrypt_server_response",
+      "kind": "func",
+      "index": 209
+    },
+    {
+      "name": "generate_runtime_auth_fields",
+      "kind": "func",
+      "index": 210
+    },
+    {
+      "name": "get_external_providers_feature_gate_fallback",
+      "kind": "func",
+      "index": 422
+    },
+    {
+      "name": "get_httpdns_account_id",
+      "kind": "func",
+      "index": 423
+    },
+    {
+      "name": "get_httpdns_config",
+      "kind": "func",
+      "index": 424
+    },
+    {
+      "name": "get_httpdns_secret_key",
+      "kind": "func",
+      "index": 425
+    },
+    {
+      "name": "get_profile_key_fingerprint",
+      "kind": "func",
+      "index": 426
+    },
+    {
+      "name": "model_cache_decrypt",
+      "kind": "func",
+      "index": 176
+    },
+    {
+      "name": "model_cache_encrypt",
+      "kind": "func",
+      "index": 177
+    },
+    {
+      "name": "profile_encrypt",
+      "kind": "func",
+      "index": 211
+    },
+    {
+      "name": "profileencryptor_encryptChunk",
+      "kind": "func",
+      "index": 163
+    },
+    {
+      "name": "profileencryptor_header",
+      "kind": "func",
+      "index": 380
+    },
+    {
+      "name": "profileencryptor_new",
+      "kind": "func",
+      "index": 259
+    },
+    {
+      "name": "__wbg_qodercontext_free",
+      "kind": "func",
+      "index": 242
+    },
+    {
+      "name": "__wbg_requestresult_free",
+      "kind": "func",
+      "index": 291
+    },
+    {
+      "name": "qodercontext_get_external_providers_access",
+      "kind": "func",
+      "index": 382
+    },
+    {
+      "name": "qodercontext_new",
+      "kind": "func",
+      "index": 131
+    },
+    {
+      "name": "qodercontext_prepareInferRequest",
+      "kind": "func",
+      "index": 136
+    },
+    {
+      "name": "qodercontext_prepareRequest",
+      "kind": "func",
+      "index": 97
+    },
+    {
+      "name": "qodercontext_refreshAuthFields",
+      "kind": "func",
+      "index": 262
+    },
+    {
+      "name": "requestresult_body",
+      "kind": "func",
+      "index": 300
+    },
+    {
+      "name": "requestresult_headerCount",
+      "kind": "func",
+      "index": 555
+    },
+    {
+      "name": "requestresult_headers",
+      "kind": "func",
+      "index": 556
+    },
+    {
+      "name": "requestresult_url",
+      "kind": "func",
+      "index": 383
+    },
+    {
+      "name": "__wbindgen_export",
+      "kind": "func",
+      "index": 661
+    },
+    {
+      "name": "__wbindgen_add_to_stack_pointer",
+      "kind": "func",
+      "index": 712
+    },
+    {
+      "name": "__wbindgen_export2",
+      "kind": "func",
+      "index": 378
+    },
+    {
+      "name": "__wbindgen_export3",
+      "kind": "func",
+      "index": 410
+    },
+    {
+      "name": "__wbindgen_export4",
+      "kind": "func",
+      "index": 662
+    }
+  ],
+  "targetImports": [
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbindgen_object_drop_ref",
+      "kind": "func",
+      "typeIdx": 4
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_set_08463b1df38a7e29",
+      "kind": "func",
+      "typeIdx": 3
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_getRandomValues_d49329ff89a07af1",
+      "kind": "func",
+      "typeIdx": 0
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_crypto_38df2bab126b63dc",
+      "kind": "func",
+      "typeIdx": 5
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_process_44c7a14e11e9f69e",
+      "kind": "func",
+      "typeIdx": 5
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_versions_276b2795b1c6a219",
+      "kind": "func",
+      "typeIdx": 5
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_node_84ea875411254db1",
+      "kind": "func",
+      "typeIdx": 5
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_require_b4edbdcf3e2a1ef0",
+      "kind": "func",
+      "typeIdx": 8
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_msCrypto_bd5a034af96bcba6",
+      "kind": "func",
+      "typeIdx": 5
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_getRandomValues_c44a50d8cfdaebeb",
+      "kind": "func",
+      "typeIdx": 0
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_randomFillSync_6c25eac9869eb53c",
+      "kind": "func",
+      "typeIdx": 0
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_call_d578befcc3145dee",
+      "kind": "func",
+      "typeIdx": 3
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbindgen_object_clone_ref",
+      "kind": "func",
+      "typeIdx": 5
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_new_with_length_9cedd08484b73942",
+      "kind": "func",
+      "typeIdx": 5
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_length_0c32cb8543c8e4c8",
+      "kind": "func",
+      "typeIdx": 5
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_prototypesetcall_3e05eb9545565046",
+      "kind": "func",
+      "typeIdx": 2
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_subarray_0f98d3fb634508ad",
+      "kind": "func",
+      "typeIdx": 3
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_new_99cabae501c0a8a0",
+      "kind": "func",
+      "typeIdx": 8
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_now_88621c9c9a4f3ffc",
+      "kind": "func",
+      "typeIdx": 15
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_static_accessor_GLOBAL_THIS_a1248013d790bf5f",
+      "kind": "func",
+      "typeIdx": 8
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_static_accessor_SELF_24f78b6d23f286ea",
+      "kind": "func",
+      "typeIdx": 8
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_static_accessor_GLOBAL_f2e0f995a21329ff",
+      "kind": "func",
+      "typeIdx": 8
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_static_accessor_WINDOW_59fd959c540fe405",
+      "kind": "func",
+      "typeIdx": 8
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg___wbindgen_throw_81fc77679af83bc6",
+      "kind": "func",
+      "typeIdx": 0
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg_Error_2e59b1b37a9a34c3",
+      "kind": "func",
+      "typeIdx": 1
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg___wbindgen_is_object_40c5a80572e8f9d3",
+      "kind": "func",
+      "typeIdx": 5
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg___wbindgen_is_string_b29b5c5a8065ba1a",
+      "kind": "func",
+      "typeIdx": 5
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg___wbindgen_is_function_49868bde5eb1e745",
+      "kind": "func",
+      "typeIdx": 5
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbg___wbindgen_is_undefined_c0cca72b82b86f4d",
+      "kind": "func",
+      "typeIdx": 5
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbindgen_cast_0000000000000001",
+      "kind": "func",
+      "typeIdx": 1
+    },
+    {
+      "module": "./qoder_auth_wasm_bg.js",
+      "name": "__wbindgen_cast_0000000000000002",
+      "kind": "func",
+      "typeIdx": 1
+    }
+  ],
+  "otherModules": [
+    {
+      "offset": 520273,
+      "file": "inline_520273.wasm",
+      "size": 54013,
+      "exportCount": 40
+    },
+    {
+      "offset": 592416,
+      "file": "inline_592416.wasm",
+      "size": 54202,
+      "exportCount": 40
+    },
+    {
+      "offset": 19125550,
+      "file": "inline_19125550.wasm",
+      "size": 205488,
+      "exportCount": 153
+    },
+    {
+      "offset": 19399568,
+      "file": "inline_19399568.wasm",
+      "size": 1380769,
+      "exportCount": 3
+    },
+    {
+      "offset": 27631470,
+      "file": "inline_27631470.wasm",
+      "size": 71736,
+      "exportCount": 8
+    }
+  ]
+}

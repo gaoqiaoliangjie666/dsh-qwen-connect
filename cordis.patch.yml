@@ -1,0 +1,7 @@
+# Register the QwenWork (千问办公) provider without changing the profile's
+# current default model. The plugin reuses the QwenWork desktop app's
+# sign-in state; no separate OAuth flow is started and no credential is
+# stored by DSH itself.
+- insert:
+    - id: llm-qwenwork
+      name: dsh-qwen-connect
