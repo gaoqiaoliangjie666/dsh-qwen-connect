@@ -60,39 +60,121 @@ export function stripDpapiPrefix(blob) {
 // ---------------------------------------------------------------------------
 
 /**
- * 尝试用 koffi 调用 CryptUnprotectData。
- * @param {Buffer} cipher 已剥离 DPAPI 前缀的密文
- * @returns {Buffer|null} 主密钥；原生模块不可用时返回 null 以便降级
+ * koffi 绑定的进程内单例。
+ *
+ * ⚠️ 必须**只初始化一次**：`koffi.struct(name, …)` 在重复注册同名类型时抛
+ * `Duplicate type name 'DATA_BLOB'`。原实现把 struct/load/func 全放在
+ * `tryNativeKoffi()` 内部，于是**第二次调用起必然抛错**，被 catch 静默吞掉
+ * 并降级到 PowerShell —— 原生路径实际上从未真正连续可用过。
+ *
+ * 探测失败（未安装 koffi / 非 Windows ABI）后不再重试，直接走 PowerShell。
  */
-function tryNativeKoffi(cipher) {
-  let koffi;
+let nativeBinding = null;
+let nativeBindingUnavailable = false;
+
+/**
+ * 解析 koffi 原生模块；解析不到返回 null。
+ *
+ * 为什么需要两条路：DSH 通过 **junction**（`profiles/<p>/node_modules/dsh-qwen-connect`）
+ * 加载本插件，而 Node 的 ESM 加载器默认会解析符号链接，使 `import.meta.url`
+ * 变成仓库真实路径。实测本机：
+ *   junction 路径 → `<DSH 安装根>\resources\app\node_modules\koffi\index.cjs`
+ *   真实路径     → `MODULE_NOT_FOUND`
+ * 即「只 require('koffi')」在真实加载方式下会失败，原生路径永远走不到。
+ * 因此再按**宿主可执行文件/入口脚本**的位置向上找 node_modules 兜底
+ * （DSH 把 koffi 与内置 Node 一起装在 `resources/app/node_modules` 下）。
+ */
+function loadKoffi() {
+  // ① 常规解析：插件自己的依赖，或未解析符号链接时的上层 node_modules
   try {
-    // 动态 require，避免未安装时影响模块加载
-    koffi = nodeRequire('koffi');
+    return nodeRequire('koffi');
   } catch {
+    /* 继续尝试宿主布局 */
+  }
+
+  // ② 宿主布局兜底：createRequire 的 resolve 会自动逐级向上遍历 node_modules，
+  //    因此只要 seed 落在宿主安装树内即可命中。
+  const seeds = new Set();
+  for (const p of [process.execPath, process.argv[1]]) {
+    if (typeof p === 'string' && p !== '') seeds.add(path.dirname(p));
+  }
+  for (const seed of seeds) {
+    try {
+      const hostRequire = createRequire(path.join(seed, '__resolve_probe__.cjs'));
+      return nodeRequire(hostRequire.resolve('koffi'));
+    } catch {
+      /* 换下一个 seed */
+    }
+  }
+  return null;
+}
+
+function getNativeBinding() {
+  if (nativeBinding !== null) return nativeBinding;
+  if (nativeBindingUnavailable) return null;
+  try {
+    const koffi = loadKoffi();
+    if (koffi === null) {
+      nativeBindingUnavailable = true;
+      return null;
+    }
+    // DATA_BLOB { DWORD cbData; BYTE *pbData; }
+    koffi.struct('DATA_BLOB', { cbData: 'uint32', pbData: 'void *' });
+    nativeBinding = {
+      koffi,
+      CryptUnprotectData: koffi
+        .load('crypt32.dll')
+        .func('bool CryptUnprotectData(DATA_BLOB *pDataIn, void *ppszDataDescr, DATA_BLOB *pOptionalEntropy, void *pvReserved, void *pPromptStruct, uint32 dwFlags, DATA_BLOB *pDataOut)'),
+      LocalFree: koffi.load('kernel32.dll').func('void *LocalFree(void *hMem)'),
+    };
+    return nativeBinding;
+  } catch {
+    nativeBindingUnavailable = true;
     return null;
   }
+}
+
+/**
+ * 尝试用 koffi 调用 CryptUnprotectData。
+ *
+ * OUT 参数必须是**原生内存**：koffi 的指针参数对 JS 对象是**值语义**（调用后
+ * 不会回写），传 `{ cbData: 0, pbData: null }` 得到的永远是空结果；`pbData` 为
+ * null 时还可能直接抛 `Cannot encode data in NULL pointer`。正确做法是用
+ * `koffi.alloc` 分配结构体、调用后用 `koffi.decode` 读回，并分别释放 pbData
+ * （LocalFree）与结构体本身（koffi.free）。
+ *
+ * @param {Buffer} cipher 已剥离 DPAPI 前缀的密文
+ * @returns {Buffer|null} 主密钥；原生模块不可用或调用失败时返回 null 以便降级
+ */
+function tryNativeKoffi(cipher) {
+  const binding = getNativeBinding();
+  if (binding === null) return null;
+  const { koffi, CryptUnprotectData, LocalFree } = binding;
+
+  let outPtr = null;
   try {
-    const crypt32 = koffi.load('crypt32.dll');
-    const kernel32 = koffi.load('kernel32.dll');
-
-    // DATA_BLOB { DWORD cbData; BYTE *pbData; }
-    const DATA_BLOB = koffi.struct('DATA_BLOB', { cbData: 'uint32', pbData: 'void *' });
-    const CryptUnprotectData = crypt32.func('bool CryptUnprotectData(DATA_BLOB *pDataIn, void *ppszDataDescr, DATA_BLOB *pOptionalEntropy, void *pvReserved, void *pPromptStruct, uint32 dwFlags, DATA_BLOB *pDataOut)');
-    const LocalFree = kernel32.func('void *LocalFree(void *hMem)');
-
     const inBuf = Buffer.from(cipher);
     const blobIn = { cbData: inBuf.length, pbData: inBuf };
-    const blobOut = { cbData: 0, pbData: null };
-    const ok = CryptUnprotectData(blobIn, null, null, null, null, 0, blobOut);
+    outPtr = koffi.alloc('DATA_BLOB', 1);
+    const ok = CryptUnprotectData(blobIn, null, null, null, null, 0, outPtr);
     if (!ok) return null;
+    const out = koffi.decode(outPtr, 'DATA_BLOB');
+    if (out.pbData === null || out.cbData === 0) return null;
     try {
-      return Buffer.from(koffi.decode(blobOut.pbData, 'uint8', blobOut.cbData));
+      return Buffer.from(koffi.decode(out.pbData, 'uint8', out.cbData));
     } finally {
-      LocalFree(blobOut.pbData);
+      LocalFree(out.pbData);
     }
   } catch {
     return null; // 结构/绑定不兼容时静默降级到 PowerShell
+  } finally {
+    if (outPtr !== null) {
+      try {
+        koffi.free(outPtr);
+      } catch {
+        /* 释放失败不影响结果 */
+      }
+    }
   }
 }
 

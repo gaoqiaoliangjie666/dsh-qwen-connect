@@ -41,6 +41,11 @@ const STEPS = [
   // 便携性因素：不得残留开发机专属路径；凭据/平台假设逐项核对
   { name: '便携性因素核对', args: ['research/probes-2026-09-14/check-portability-factors.mjs'] },
   { name: '平台假设核查', args: ['research/probes-2026-09-14/check-platform-assumptions.mjs'] },
+  // 上游契约漂移检测：比对当前千问 SDK 的协议字段与插件硬编码规格是否一致。
+  // 纯静态、不发网络请求；未装 App 时自动跳过（退出 0），不会阻塞本机验证。
+  // 用途：App 升级后第一时间发现「协议变了」，而不是等用户发现对话不可用
+  // （2026-09-24 的 1.0.6→1.2.0 故障即因缺 business 字段导致恒定 503）。
+  { name: '上游契约漂移检测（静态）', args: ['tools/check-upstream-contract.mjs'] },
 ];
 
 let failed = 0;

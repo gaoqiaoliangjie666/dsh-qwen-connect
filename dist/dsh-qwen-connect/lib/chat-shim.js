@@ -34,6 +34,7 @@ import {
   SSE_DONE,
 } from './sse.js';
 import { buildInferBody, createSignerSession } from './signer-session.js';
+import { FALLBACK_QWENWORK_MODELS } from './models.js';
 import { recordSample } from './perf.js';
 import { trace } from './trace.js';
 
@@ -447,6 +448,37 @@ export function resolveModelKey(body) {
 }
 
 /**
+ * 取某个模型声明的能力位（供 1.2.0 的 `model_config.is_vl` / `is_reasoning` 使用）。
+ *
+ * 依据：SDK 1.2.0 的 `model_config`（规格 §3.6，偏移 8816066）里
+ *   `is_vl: t?.isVl ?? r?.is_vl ?? false`、`is_reasoning: r?.is_reasoning ?? false`，
+ * 其中 `r` 是上游 catalog 返回的**逐模型**记录。插件不动态拉 catalog，等价物是
+ * models.js 的静态目录（其注释注明取自 App `rawModels` 的 `is_vl` 等实测值）：
+ *   - `is_vl`        ← 目录的 `supportsImages`（App `rawModels.is_vl === true`）
+ *   - `is_reasoning` ← 目录的既有声明：models.js 的 `toPiModel()` 对全部模型
+ *                      置 `reasoning: true`（实测上游确实返回 `reasoning_content`）
+ *
+ * 目录里查不到的模型按 SDK 的兜底取 `false`——不凭空声明能力。注意
+ * `is_reasoning` 还会被 SDK 按 `thinkingBudget === 0` / `reasoning_effort === "none"`
+ * 降级为 false（规格 §3.6）；本插件不主动关闭思考，故不做该降级。
+ *
+ * ⚠️ **`is_vl` 绝不可用作「是否发送图片」的开关**（t7 实测）：
+ *   - 上游**不看**该字段——实测 `is_vl:false` 时上游照样正常识图；
+ *   - 它只是 SDK **本地**决定是否把图片降级为 `[Image omitted...]` 占位符的开关；
+ *   - 真正的发图判据是 `toMultimodalContent()`：content 数组里存在
+ *     `{type:"image_url"}` 块才发图，与模型能力声明无关。
+ *   它在这里**仅**用于填写 1.2.0 契约要求的 `model_config.is_vl` 字段。
+ *
+ * @param {string} modelKey
+ * @returns {{ isVl: boolean, isReasoning: boolean }}
+ */
+function resolveModelCapabilities(modelKey) {
+  const info = FALLBACK_QWENWORK_MODELS.find((m) => m.id === modelKey);
+  if (info === undefined) return { isVl: false, isReasoning: false };
+  return { isVl: info.supportsImages === true, isReasoning: true };
+}
+
+/**
  * 创建 shim 的请求处理器。
  *
  * @param {{
@@ -567,12 +599,20 @@ export function createChatShimHandler(deps) {
     let upstream;
     try {
       // tools 必须一并透传：否则模型收不到工具 schema，会编造自由文本格式。
+      // 1.2.0 的 model_config 需要 is_vl / is_reasoning（规格 §3.6），取值来自
+      // models.js 的静态目录声明（插件侧不动态拉 catalog）。
+      const capabilities = resolveModelCapabilities(modelKey);
       const bodyJson = buildInferBody({
         messages,
         modelKey,
         sessionId,
         tools: body?.tools,
-        // 图片经 chat_context.imageUrls 送上游（上游 agent 协议的约定字段）。
+        isVl: capabilities.isVl,
+        isReasoning: capabilities.isReasoning,
+        // 图片经 chat_context.imageUrls 送上游。
+        // ⚠️ t7 实测：该字段**无实际作用**，真正生效的通道是 messages[].content[]
+        // 里的 {type:"image_url",image_url:{url}}（由 toMultimodalContent 产出）。
+        // 此处保留仅为「只增不减」既有行为，删除它不属本任务范围。
         imageUrls: collectImageUrls(body),
       });
       upstream = await fetchUpstreamWithRetry(session, bodyJson, modelKey, log, {
@@ -656,7 +696,22 @@ export function createChatShimHandler(deps) {
         // ⚠️ 置 `errored`，收尾时**不得**再补 `finish_reason: "stop"` + `[DONE]`。
         // 否则下游会认为「流正常结束但内容为空」，报出 EMPTY_RESPONSE 之类
         // 的误导性错误，把真实原因（如「该模型对当前账号不可用」）掩盖掉。
-        write(`data: ${JSON.stringify({ error: { message: frame.error.message, type: 'api_error' } })}\n\n`);
+        //
+        // ⚠️ 必须**原样保留上游的 HTTP 状态码**。上游把错误放在 HTTP 200 的
+        // SSE 流内，下游（pi-ai → DSH）从协议层拿不到任何状态码；这里若再丢掉
+        // `frame.error.status`，用户就只看到 "Model catalog unavailable" 这类
+        // 纯文本，无法区分「模型名写错了」与「上游 503，只能等」。
+        // 实测上游会用状态码表达不同语义：
+        //   403 Model is not available for this user  —— 模型不在该账号可用列表
+        //   400 Unsupported FetchKeys value           —— 请求 URL 参数不合法
+        //   503 Model catalog unavailable             —— 上游模型目录服务不可用
+        // 状态码是这三者唯一的判据，因此按 `HTTP <code>: <message>` 透传。
+        const status = frame.error.status;
+        const message =
+          typeof status === 'number' && status > 0
+            ? `HTTP ${status}: ${frame.error.message}`
+            : frame.error.message;
+        write(`data: ${JSON.stringify({ error: { message, type: 'api_error' } })}\n\n`);
         errored = true;
         return false;
       }

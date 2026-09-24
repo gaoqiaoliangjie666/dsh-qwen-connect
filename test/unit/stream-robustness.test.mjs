@@ -1125,18 +1125,27 @@ test('toQwenWorkMessages: 无 tool_calls 的 assistant 空消息仍被丢弃（�
   assert.deepEqual(msgs.map((m) => m.role), ['user', 'user']);
 });
 
-test('buildInferBody: 有 tools 时透传，无 tools 时不出现该字段', async () => {
+test('buildInferBody: 有 tools 时透传，无 tools 时发空数组（不得省略键）', async () => {
   const { buildInferBody } = await import('../../lib/signer-session.js');
   const withTools = JSON.parse(
     buildInferBody({ messages: [{ role: 'user', content: 'x' }], tools: [{ type: 'function', function: { name: 'f' } }] }),
   );
   assert.equal(withTools.tools.length, 1);
 
+  // ⚠️ 断言基线已于千问办公 1.2.0 适配时更新。
+  //
+  // 旧断言是「无工具时不出现 tools 字段」——那是 1.0.x 时期的实现行为。
+  // 1.2.0 的 SDK 里 tools 恒为数组：`tools: o?.tools ?? []`（body 构造，obf 偏移
+  // 8815851；该表达式在全 SDK 仅此一次，**不存在「省略该键」的合法路径**），
+  // 因此插件也必须显式发 `[]`。规格见
+  // `对话/2026-09-24-千问1.2.0适配/recon-body-spec.md` §3.12。
+  //
+  // 保留该测试的价值：防止实现退回到「省略键」（那会偏离上游契约）。
   const without = JSON.parse(buildInferBody({ messages: [{ role: 'user', content: 'x' }] }));
-  assert.equal('tools' in without, false, '无工具时不应凭空加 tools 字段');
+  assert.deepEqual(without.tools, [], '无工具时必须发空数组（规格 §3.12：tools:o?.tools??[]，不得省略键）');
 
   const empty = JSON.parse(buildInferBody({ messages: [], tools: [] }));
-  assert.equal('tools' in empty, false, '空数组不应写入');
+  assert.deepEqual(empty.tools, [], '空数组原样写入（不是省略键）');
 });
 
 test('shim: 携带 tools 的请求会到达上游且 tools 被透传', async () => {
